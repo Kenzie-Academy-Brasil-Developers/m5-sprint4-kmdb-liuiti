@@ -1,15 +1,14 @@
-from django.shortcuts import render
 from django.contrib.auth import authenticate
 from rest_framework.views import APIView, Response, status
 from rest_framework.authtoken.models import Token
 from users.serializers import LoginSerializer, RegisterSerializer
 from .models import User
 from rest_framework.authentication import TokenAuthentication
-from rest_framework.permissions import IsAuthenticated
 from users.permissions import CustomPermission
 from django.core.exceptions import ObjectDoesNotExist
+from rest_framework.pagination import PageNumberPagination
 
-class UserView(APIView):
+class UserView(APIView, PageNumberPagination):
     authentication_classes = [TokenAuthentication]
     permission_classes = [CustomPermission]
 
@@ -22,9 +21,10 @@ class UserView(APIView):
 
     def get(self, request, user_id = None):
         users = User.objects.all()
-        serializer = RegisterSerializer(users, many = True)
+        result_page = self.paginate_queryset(users, request, view = self)
+        serializer = RegisterSerializer(result_page, many = True)
 
-        return Response(serializer.data)
+        return self.get_paginated_response(serializer.data)
 
 
 class UserDetailView(APIView):
